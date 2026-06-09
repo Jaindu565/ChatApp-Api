@@ -1,16 +1,44 @@
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import React, { useEffect, useState } from "react";
 import {
-    Image,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Home() {
+  const [chatData, setChatData] = useState();
+
+  async function loadChat() {
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
+      const response = await fetch(
+        apiUrl + "/chat/get-chats?mobile=0717915426",
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setChatData(data);
+      } else {
+        alert(response.status + " : " + data.msg);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    loadChat();
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerView}>
@@ -23,21 +51,27 @@ export default function Home() {
         <TextInput placeholder="Search" autoFocus={false} />
       </View>
 
-      {/* chat desong */}
-      <Pressable style={styles.chatView}>
-        <Image
-          source={require("../../assets/images/person.png")}
-          style={styles.profilePic}
-        />
-        <View style={{ gap: 3 }}>
-          <Text style={styles.nameText}>Kasun Menadi</Text>
-          <Text style={styles.msgText}>Helllo</Text>
-        </View>
+      <FlatList
+        data={chatData}
+        renderItem={({ item }) => {
+          return (
+            <Pressable style={styles.chatView}>
+              <Image
+                source={require("../../assets/images/person.png")}
+                style={styles.profilePic}
+              />
+              <View style={{ gap: 3 }}>
+                <Text style={styles.nameText}>
+                  {item.user.fname + " " + item.user.lname}
+                </Text>
+                <Text style={styles.msgText}>Helllo</Text>
+              </View>
 
-        <Text style={styles.time}>10:20 PM</Text>
-      </Pressable>
-
-      {/* chat desing */}
+              <Text style={styles.time}>10:20 PM</Text>
+            </Pressable>
+          );
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -77,6 +111,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    paddingBottom: 10,
   },
   msgText: {
     color: "#666666",
