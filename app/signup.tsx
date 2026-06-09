@@ -38,14 +38,13 @@ export default function Signup() {
       };
 
       try {
-        const response = await fetch(
-          "http://192.168.1.103:3000/user/register",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(registerData),
-          },
-        );
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
+        const response = await fetch(apiUrl + "/user/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(registerData),
+        });
 
         const resData = await response.json();
         alert(response.status + " : " + resData.msg);

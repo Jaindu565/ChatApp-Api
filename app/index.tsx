@@ -2,7 +2,7 @@ import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -22,6 +22,22 @@ export default function Login() {
   const [number, setNumber] = useState("");
   const [password, setPassword] = useState("");
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkUser() {
+      const user = await AsyncStorage.getItem("user");
+
+      if (user) {
+        router.replace("/(tabs)/home");
+      } else {
+        setIsLoading(false);
+      }
+    }
+
+    checkUser();
+  }, []);
+
   async function signIn() {
     if (number !== "" && password !== "") {
       const loginData = {
@@ -30,7 +46,9 @@ export default function Login() {
       };
 
       try {
-        const response = await fetch("http://192.168.1.103:3000/user/login", {
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
+        const response = await fetch(apiUrl + "/user/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(loginData),
@@ -42,7 +60,7 @@ export default function Login() {
 
           await AsyncStorage.setItem("user", JSON.stringify(data.user));
 
-          alert("Login Successful");
+          router.push("/(tabs)/home");
         } else {
           try {
             const data = await response.json();
@@ -58,63 +76,65 @@ export default function Login() {
     }
   }
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1, alignItems: "center" }}
+  if (!isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <Image
-            source={require("../assets/images/bg-signin.jpg")}
-            style={styles.img}
-          />
-          <View style={styles.titleView}>
-            <Text style={styles.title}>Sign In</Text>
-            <Text style={styles.subtitle}>Welcome Back!</Text>
-          </View>
-          <View style={styles.inputView}>
-            <FontAwesome6 name="user" size={24} color="black" />
-            <TextInput placeholder="070 054 ****" onChangeText={setNumber} />
-          </View>
-
-          <View style={styles.inputView}>
-            <MaterialIcons name="lock-outline" size={25} color="black" />
-            <TextInput
-              placeholder="••••••••"
-              secureTextEntry
-              onChangeText={setPassword}
-            />
-          </View>
-
-          <Pressable
-            style={styles.button}
-            onPress={() => {
-              signIn();
-            }}
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, alignItems: "center" }}
           >
-            <Text style={styles.buttonText}>Sign In</Text>
-          </Pressable>
+            <Image
+              source={require("../assets/images/bg-signin.jpg")}
+              style={styles.img}
+            />
+            <View style={styles.titleView}>
+              <Text style={styles.title}>Sign In</Text>
+              <Text style={styles.subtitle}>Welcome Back!</Text>
+            </View>
+            <View style={styles.inputView}>
+              <FontAwesome6 name="user" size={24} color="black" />
+              <TextInput placeholder="070 054 ****" onChangeText={setNumber} />
+            </View>
 
-          <View style={{ alignItems: "center", gap: 2 }}>
-            <Text>Forget Password</Text>
-            <Text>
-              Don t have an account?
-              <Text
-                style={{ fontWeight: "bold" }}
-                onPress={() => {
-                  router.push("/signup");
-                }}
-              >
-                Sign up
+            <View style={styles.inputView}>
+              <MaterialIcons name="lock-outline" size={25} color="black" />
+              <TextInput
+                placeholder="••••••••"
+                secureTextEntry
+                onChangeText={setPassword}
+              />
+            </View>
+
+            <Pressable
+              style={styles.button}
+              onPress={() => {
+                signIn();
+              }}
+            >
+              <Text style={styles.buttonText}>Sign In</Text>
+            </Pressable>
+
+            <View style={{ alignItems: "center", gap: 2 }}>
+              <Text>Forget Password</Text>
+              <Text>
+                Don t have an account?
+                <Text
+                  style={{ fontWeight: "bold" }}
+                  onPress={() => {
+                    router.push("/signup");
+                  }}
+                >
+                  Sign up
+                </Text>
               </Text>
-            </Text>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
 }
 
 const styles = StyleSheet.create({
