@@ -1,5 +1,7 @@
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
@@ -14,16 +16,22 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Home() {
   const [chatData, setChatData] = useState();
+  const [isRefresh, setIsRefresh] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [userMobile, setUserMobile] = useState("");
 
-  async function loadChat() {
+  const router = useRouter();
+
+  async function loadChat(mobile: string) {
+    setIsRefresh(true);
+
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
-      const response = await fetch(
-        apiUrl + "/chat/get-chats?mobile=0717915426",
-      );
+      const response = await fetch(apiUrl + "/chat/get-chats?mobile=" + mobile);
 
       const data = await response.json();
+      setIsRefresh(false);
 
       if (response.ok) {
         setChatData(data);
@@ -36,13 +44,34 @@ export default function Home() {
   }
 
   useEffect(() => {
-    loadChat();
+    async function getUser() {
+      const userString = await AsyncStorage.getItem("user");
+
+      if (userString) {
+        const userObj = JSON.parse(userString);
+        setUserName(userObj.fname);
+        setUserMobile(userObj.mobile);
+        loadChat(userObj.mobile);
+      }
+    }
+
+    getUser();
   }, []);
+
+  function timeFormat(time: string) {
+    const formattedTime = new Date(time).toLocaleTimeString("en-Us", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    return formattedTime;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerView}>
-        <Text style={{ fontSize: 18 }}>User Name</Text>
+        <Text style={{ fontSize: 18 }}>{userName}</Text>
         <FontAwesome5 name="bell" size={22} color="#666666" />
       </View>
 
@@ -55,7 +84,12 @@ export default function Home() {
         data={chatData}
         renderItem={({ item }) => {
           return (
-            <Pressable style={styles.chatView}>
+            <Pressable
+              style={styles.chatView}
+              onPress={() => {
+                router.push("/chat");
+              }}
+            >
               <Image
                 source={require("../../assets/images/person.png")}
                 style={styles.profilePic}
@@ -64,12 +98,20 @@ export default function Home() {
                 <Text style={styles.nameText}>
                   {item.user.fname + " " + item.user.lname}
                 </Text>
-                <Text style={styles.msgText}>Helllo</Text>
+                <Text style={styles.msgText}>{item.last_message.message}</Text>
               </View>
 
-              <Text style={styles.time}>10:20 PM</Text>
+              <Text style={styles.time}>
+                {timeFormat(item.last_message.sent_at)}
+              </Text>
             </Pressable>
           );
+        }}
+        refreshing={isRefresh}
+        onRefresh={() => {
+          if (userMobile) {
+            loadChat(userMobile);
+          }
         }}
       />
     </SafeAreaView>
