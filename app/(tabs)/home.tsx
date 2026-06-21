@@ -31,6 +31,9 @@ export default function Home() {
       const response = await fetch(apiUrl + "/chat/get-chats?mobile=" + mobile);
 
       const data = await response.json();
+
+      console.log(data);
+
       setIsRefresh(false);
 
       if (response.ok) {
@@ -88,6 +91,10 @@ export default function Home() {
               style={styles.chatView}
               onPress={() => {
                 router.push("/chat");
+                // router.push({
+                //   pathname: "/chat",
+                //   params: { chatId: item.last_message.chat_chat_id },
+                // });
               }}
             >
               <Image

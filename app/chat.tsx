@@ -17,6 +17,26 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function Chat() {
   const router = useRouter();
 
+  // useEffect(() => {
+  //   loadChatHistory();
+  // }, []);
+
+  // async function loadChatHistory() {
+  //   const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
+  //   const response = await fetch(
+  //     apiUrl + "/chat-history/get-chat-history?id=1",
+  //   );
+
+  //   const data = await response.json();
+
+  //   if (response.ok) {
+  //     console.log(data);
+  //   } else {
+  //     console.log(response.status + " : " + data.msg);
+  //   }
+  // }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
