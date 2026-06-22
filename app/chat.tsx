@@ -1,8 +1,10 @@
 import Entypo from "@expo/vector-icons/Entypo";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
+  FlatList,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -17,25 +19,43 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function Chat() {
   const router = useRouter();
 
-  // useEffect(() => {
-  //   loadChatHistory();
-  // }, []);
+  const [chatHistory, setChatHistory] = useState();
+  const [userName, setUserName] = useState("");
 
-  // async function loadChatHistory() {
-  //   const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+  const params = useLocalSearchParams();
+  const chatId = params.chatId;
+  const userMobile = params.userMobile;
 
-  //   const response = await fetch(
-  //     apiUrl + "/chat-history/get-chat-history?id=1",
-  //   );
+  useEffect(() => {
+    setUserName(params.userName + "");
+    loadChatHistory();
+  }, []);
 
-  //   const data = await response.json();
+  async function loadChatHistory() {
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
-  //   if (response.ok) {
-  //     console.log(data);
-  //   } else {
-  //     console.log(response.status + " : " + data.msg);
-  //   }
-  // }
+    const response = await fetch(
+      apiUrl + "/chat-history/get-chat-history?id=" + chatId,
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setChatHistory(data);
+    } else {
+      console.log(response.status + " : " + data.msg);
+    }
+  }
+
+  function timeFormat(time: string) {
+    const formattedTime = new Date(time).toLocaleTimeString("en-Us", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    return formattedTime;
+  }
 
   return (
     <KeyboardAvoidingView
@@ -59,7 +79,7 @@ export default function Chat() {
             style={styles.profilePic}
           />
           <View style={{ flex: 1, gap: 3 }}>
-            <Text style={styles.nameTxt}>Fname Lname</Text>
+            <Text style={styles.nameTxt}>{userName}</Text>
             <View style={styles.statusView}>
               <View style={styles.statusBall} />
               <Text style={styles.statusTxt}>Online</Text>
@@ -69,15 +89,39 @@ export default function Chat() {
         </View>
 
         <View style={styles.bodyView}>
-          <View style={[styles.messageView, { alignItems: "flex-end" }]}>
-            <Text style={[styles.message, styles.sendMsg]}>Hello</Text>
-            <Text style={styles.msgTime}>09:35 PM</Text>
-          </View>
+          <FlatList
+            data={chatHistory}
+            renderItem={({ item }) => {
+              return (
+                <View
+                  style={[
+                    styles.messageView,
+                    {
+                      alignItems:
+                        userMobile === item.sender ? "flex-start" : "flex-end",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.message,
+                      userMobile === item.sender
+                        ? styles.receiveMsg
+                        : styles.sendMsg,
+                    ]}
+                  >
+                    {item.message}
+                  </Text>
+                  <Text style={styles.msgTime}>{timeFormat(item.sent_at)}</Text>
+                </View>
+              );
+            }}
+          />
 
-          <View style={[styles.messageView, { alignItems: "flex-start" }]}>
+          {/* <View style={[styles.messageView, { alignItems: "flex-start" }]}>
             <Text style={[styles.message, styles.receiveMsg]}>Hello</Text>
             <Text style={styles.msgTime}>09:35 PM</Text>
-          </View>
+          </View> */}
         </View>
 
         <View style={styles.inputView}>

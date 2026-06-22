@@ -32,8 +32,6 @@ export default function Home() {
 
       const data = await response.json();
 
-      console.log(data);
-
       setIsRefresh(false);
 
       if (response.ok) {
@@ -90,11 +88,14 @@ export default function Home() {
             <Pressable
               style={styles.chatView}
               onPress={() => {
-                router.push("/chat");
-                // router.push({
-                //   pathname: "/chat",
-                //   params: { chatId: item.last_message.chat_chat_id },
-                // });
+                router.push({
+                  pathname: "/chat",
+                  params: {
+                    chatId: item.last_message.chat_chat_id,
+                    userName: item.user.fname + " " + item.user.lname,
+                    userMobile: item.user.mobile,
+                  },
+                });
               }}
             >
               <Image
