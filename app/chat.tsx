@@ -1,8 +1,9 @@
 import Entypo from "@expo/vector-icons/Entypo";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Image,
@@ -19,8 +20,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function Chat() {
   const router = useRouter();
 
-  const [chatHistory, setChatHistory] = useState();
+  const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [userName, setUserName] = useState("");
+  const [text, setText] = useState("");
+  const [loggedUser, setLoggedUser] = useState<any>();
+
+  const webSocket = useRef<WebSocket>(null);
 
   const params = useLocalSearchParams();
   const chatId = params.chatId;
@@ -29,6 +34,7 @@ export default function Chat() {
   useEffect(() => {
     setUserName(params.userName + "");
     loadChatHistory();
+    connectWebSocket();
   }, []);
 
   async function loadChatHistory() {
@@ -55,6 +61,44 @@ export default function Chat() {
     });
 
     return formattedTime;
+  }
+
+  async function connectWebSocket() {
+    const user = await AsyncStorage.getItem("user");
+
+    let userObj: any;
+
+    if (user) {
+      userObj = JSON.parse(user);
+      setLoggedUser(userObj);
+    }
+
+    webSocket.current = new WebSocket("ws://192.168.1.103:3000");
+
+    console.log("Web Socket Starting");
+
+    webSocket.current.onopen = () => {
+      console.log("Connected to Web Socket");
+
+      if (webSocket.current) {
+        const data = {
+          type: "register",
+          data: userObj.mobile,
+        };
+
+        webSocket.current.send(JSON.stringify(data));
+      }
+    };
+
+    webSocket.current.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      console.log(message);
+
+      // setChatHistory((chatArray) => {
+      //   return [...chatArray, message];
+      // });
+      setChatHistory((chatArray) => [...chatArray, message]);
+    };
   }
 
   return (
@@ -125,8 +169,40 @@ export default function Chat() {
         </View>
 
         <View style={styles.inputView}>
-          <TextInput style={styles.input} placeholder="Enter Message" />
-          <Pressable style={styles.sendBtn}>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter Message"
+            onChangeText={setText}
+            value={text}
+          />
+          <Pressable
+            style={styles.sendBtn}
+            onPress={() => {
+              if (webSocket.current) {
+                const msg = {
+                  message: text,
+                  sent_at: new Date().toISOString(),
+                  sender: loggedUser.mobile,
+                };
+
+                setChatHistory((oldChat) => [...oldChat, msg]);
+
+                console.log("receiver: " + userMobile);
+
+                const data = {
+                  type: "chat",
+                  data: text,
+                  receiver: userMobile,
+                  sender: loggedUser.mobile,
+                  chatId: chatId,
+                };
+
+                setText(" ");
+
+                webSocket.current.send(JSON.stringify(data));
+              }
+            }}
+          >
             <FontAwesome name="send" size={24} color="white" />
           </Pressable>
         </View>
